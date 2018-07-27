@@ -9,27 +9,9 @@
   pruneopts = "UT"
   revision = "d5614b47a7a08dc23152614b276f8ded847d4980"
 
-[[projects]]
-  branch = "master"
-  digest = "1:4429b79947e9af3ccf562cdde4ca61934c7e229726a5afd6527151a91f636a5d"
-  name = "github.com/mailru/easyjson"
-  packages = [
-    ".",
-    "buffer",
-    "jlexer",
-    "jwriter",
-  ]
-  pruneopts = "UT"
-  revision = "d5012789d6659eeed305f54c1b1542e7b65829e6"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = [
-    "github.com/jm-duarte/setlistfm",
-    "github.com/mailru/easyjson",
-    "github.com/mailru/easyjson/jlexer",
-    "github.com/mailru/easyjson/jwriter",
-  ]
+  input-imports = ["github.com/jm-duarte/setlistfm"]
   solver-name = "gps-cdcl"
   solver-version = 1
