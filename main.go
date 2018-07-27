@@ -5,12 +5,37 @@ import (
 	"fmt"
 
 	"github.com/jm-duarte/setlistfm"
+	"github.com/spf13/viper"
 )
 
-func main() {
+type AppConfig struct {
+	SetlistFmAPIKey string
+}
 
+var cfg AppConfig
+
+func readConfig() {
+	viper.SetConfigName("setplaylistbuilder")
+	viper.AddConfigPath(".")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+
+	err = viper.Unmarshal(&cfg)
+	if err != nil {
+		panic(fmt.Errorf("Fatal error parsing config file: %s \n", err))
+	}
+}
+
+func init() {
+	readConfig()
+}
+
+func main() {
 	ctx := context.Background()
-	client := setlistfm.NewClient("")
+	client := setlistfm.NewClient(cfg.SetlistFmAPIKey)
 	setListQuery := setlistfm.SetlistQuery{
 		ArtistName: "kasabian",
 	}
