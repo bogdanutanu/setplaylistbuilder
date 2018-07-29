@@ -14,7 +14,7 @@ import (
 // token to access and operate
 // a user's account
 type SpotifyAuthorizedClientBuilder interface {
-	GetSpotifyAuthorizedClient() *spotify.Client
+	GetSpotifyAuthorizedClient(w http.ResponseWriter) *spotify.Client
 }
 
 type spotifyAuthorizedClientBuilderStruct struct {
@@ -32,12 +32,18 @@ func NewSpotifyAuthorizedClientBuilder(redirectURI string) *spotifyAuthorizedCli
 	}
 }
 
-func (acb *spotifyAuthorizedClientBuilderStruct) GetSpotifyAuthorizedClient() *spotify.Client {
-	url := acb.auth.AuthURL(acb.state)
-	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
-
+func (acb *spotifyAuthorizedClientBuilderStruct) GetSpotifyAuthorizedClient(w http.ResponseWriter) *spotify.Client {
+	var client *spotify.Client
+	token, err := acb.getOauthToken()
+	if err != nil {
+		url := acb.auth.AuthURL(acb.state)
+		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+	} else {
+		acb.buildClient(token, w)
+	}
 	// wait for auth to complete
-	client := <-acb.ch
+	client = <-acb.ch
+
 	return client
 }
 
