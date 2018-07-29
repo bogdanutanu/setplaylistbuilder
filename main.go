@@ -9,7 +9,8 @@ import (
 )
 
 type AppConfig struct {
-	SetlistFmAPIKey string
+	SetlistFmAPIKey       string
+	SpotifyOauthTokenFile string
 }
 
 var cfg AppConfig
