@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/zmb3/spotify"
@@ -60,6 +61,22 @@ func (acb *spotifyAuthorizedClientBuilderStruct) getOauthToken() (*oauth2.Token,
 	}
 
 	return oauth2Token, nil
+}
+
+func (acb *spotifyAuthorizedClientBuilderStruct) completeAuth(w http.ResponseWriter, r *http.Request) {
+	tok, err := acb.auth.Token(acb.state, r)
+	if err != nil {
+		http.Error(w, "Couldn't get token", http.StatusForbidden)
+		log.Fatal(err)
+	}
+	if st := r.FormValue("state"); st != acb.state {
+		http.NotFound(w, r)
+		log.Fatalf("State mismatch: %s != %s\n", st, acb.state)
+	}
+	// use the token to get an authenticated client
+	// Persist the token to a file in Json format. DO NOT use the channel when the
+	// token can be rebuilt from the file.
+	acb.buildClient(tok, w)
 }
 
 func (acb *spotifyAuthorizedClientBuilderStruct) buildClient(tok *oauth2.Token, w http.ResponseWriter) {
