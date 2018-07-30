@@ -67,4 +67,14 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println("You are logged in as:", user.ID)
+
+	playlists, err := spotifyClient.GetPlaylistsForUser(user.ID)
+	if err != nil {
+		panic(fmt.Sprintf("Error retrieving user's playlists: %v", err))
+	}
+
+	for _, p := range playlists.Playlists {
+		fmt.Printf("%s\n", p.Name)
+	}
+
 }
