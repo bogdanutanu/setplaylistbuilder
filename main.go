@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 
 	"github.com/jm-duarte/setlistfm"
+	"github.com/setplaylistbuilder/spotifyutils"
 	"github.com/spf13/viper"
 )
 
@@ -46,4 +49,22 @@ func main() {
 		panic(fmt.Sprintf("Error searching for setlists: %s", err))
 	}
 	fmt.Printf("Response: %+v", kasabiansetlists)
+
+	fmt.Println()
+	fmt.Println()
+
+	spotifyClientBuilder := spotifyutils.NewSpotifyAuthorizedClientBuilder("http://localhost:8080/callback")
+
+	http.HandleFunc("/callback", spotifyClientBuilder.CompleteAuth)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Got request for:", r.URL.String())
+	})
+	go http.ListenAndServe(":8080", nil)
+
+	spotifyClient := spotifyClientBuilder.GetSpotifyAuthorizedClient()
+	user, err := spotifyClient.CurrentUser()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("You are logged in as:", user.ID)
 }

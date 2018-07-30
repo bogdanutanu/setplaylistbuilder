@@ -15,7 +15,7 @@ import (
 // token to access and operate
 // a user's account
 type SpotifyAuthorizedClientBuilder interface {
-	GetSpotifyAuthorizedClient(w http.ResponseWriter) *spotify.Client
+	GetSpotifyAuthorizedClient() *spotify.Client
 }
 
 type spotifyAuthorizedClientBuilderStruct struct {
@@ -33,23 +33,25 @@ func NewSpotifyAuthorizedClientBuilder(redirectURI string) *spotifyAuthorizedCli
 	}
 }
 
-func (acb *spotifyAuthorizedClientBuilderStruct) GetSpotifyAuthorizedClient(w http.ResponseWriter) *spotify.Client {
+func (acb *spotifyAuthorizedClientBuilderStruct) GetSpotifyAuthorizedClient() *spotify.Client {
 	var client *spotify.Client
-	token, err := acb.getOauthToken()
+	token, err := getOauthTokenFromFile()
 	if err != nil {
 		url := acb.auth.AuthURL(acb.state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+		// wait for auth to complete
+		client = <-acb.ch
 	} else {
-		acb.buildClient(token, w)
+		client = acb.buildClient(token)
 	}
-	// wait for auth to complete
-	client = <-acb.ch
 
 	return client
 }
 
-func (acb *spotifyAuthorizedClientBuilderStruct) getOauthToken() (*oauth2.Token, error) {
-	oauthTokenRawJSON, err := ioutil.ReadFile("./oauth-token.json")
+const spotifyOauthTokenFile = "./spotify-oauth-token.json"
+
+func getOauthTokenFromFile() (*oauth2.Token, error) {
+	oauthTokenRawJSON, err := ioutil.ReadFile(spotifyOauthTokenFile)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +65,15 @@ func (acb *spotifyAuthorizedClientBuilderStruct) getOauthToken() (*oauth2.Token,
 	return oauth2Token, nil
 }
 
-func (acb *spotifyAuthorizedClientBuilderStruct) completeAuth(w http.ResponseWriter, r *http.Request) {
+func writeOauthTokenToFile(tok *oauth2.Token) error {
+	jsonMarshalledToken, err := json.Marshal(tok)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(spotifyOauthTokenFile, jsonMarshalledToken, 0600)
+}
+
+func (acb *spotifyAuthorizedClientBuilderStruct) CompleteAuth(w http.ResponseWriter, r *http.Request) {
 	tok, err := acb.auth.Token(acb.state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
@@ -73,14 +83,19 @@ func (acb *spotifyAuthorizedClientBuilderStruct) completeAuth(w http.ResponseWri
 		http.NotFound(w, r)
 		log.Fatalf("State mismatch: %s != %s\n", st, acb.state)
 	}
+
+	fmt.Fprintf(w, fmt.Sprintf("Login Completed! Token received: %+v", tok))
 	// use the token to get an authenticated client
 	// Persist the token to a file in Json format. DO NOT use the channel when the
 	// token can be rebuilt from the file.
-	acb.buildClient(tok, w)
+	if err = writeOauthTokenToFile(tok); err != nil {
+		panic(fmt.Sprintf("Error writing Oauth token to file: %v", err))
+	}
+
+	acb.ch <- acb.buildClient(tok)
 }
 
-func (acb *spotifyAuthorizedClientBuilderStruct) buildClient(tok *oauth2.Token, w http.ResponseWriter) {
+func (acb *spotifyAuthorizedClientBuilderStruct) buildClient(tok *oauth2.Token) *spotify.Client {
 	client := acb.auth.NewClient(tok)
-	fmt.Fprintf(w, fmt.Sprintf("Login Completed! Token received: %+v", tok))
-	acb.ch <- &client
+	return &client
 }
