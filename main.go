@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/jm-duarte/setlistfm"
+	"github.com/setplaylistbuilder/setlist"
 	"github.com/setplaylistbuilder/spotifyutils"
 	"github.com/spf13/viper"
 )
@@ -48,7 +49,14 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Error searching for setlists: %s", err))
 	}
-	fmt.Printf("Response: %+v", kasabiansetlists)
+	fmt.Printf("Kasabian setlists: %+v", kasabiansetlists)
+	fmt.Println()
+	fmt.Println()
+
+	// We will try to find the most recent non-empty setlist from the first
+	// results page only
+	lastSetlist := setlist.ExtractMostRecent(kasabiansetlists.Setlists)
+	fmt.Printf("Most recent setlist: %+v", lastSetlist)
 
 	fmt.Println()
 	fmt.Println()
@@ -68,13 +76,12 @@ func main() {
 	}
 	fmt.Println("You are logged in as:", user.ID)
 
-	playlists, err := spotifyClient.GetPlaylistsForUser(user.ID)
-	if err != nil {
-		panic(fmt.Sprintf("Error retrieving user's playlists: %v", err))
-	}
-
-	for _, p := range playlists.Playlists {
-		fmt.Printf("%s\n", p.Name)
-	}
+	// playlists, err := spotifyClient.GetPlaylistsForUser(user.ID)
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Error retrieving user's playlists: %v", err))
+	// }
+	// for _, p := range playlists.Playlists {
+	// 	fmt.Printf("%s\n", p.Name)
+	// }
 
 }
