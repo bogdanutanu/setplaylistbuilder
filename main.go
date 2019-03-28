@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
+
+	"github.com/zmb3/spotify"
 
 	"github.com/jm-duarte/setlistfm"
 	"github.com/setplaylistbuilder/setlist"
@@ -49,7 +52,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Error searching for setlists: %s", err))
 	}
-	fmt.Printf("Kasabian setlists: %+v", kasabiansetlists)
+	// fmt.Printf("Kasabian setlists: %+v", kasabiansetlists)
 	fmt.Println()
 	fmt.Println()
 
@@ -84,4 +87,31 @@ func main() {
 	// 	fmt.Printf("%s\n", p.Name)
 	// }
 
+	for i, set := range lastSetlist.Sets.Set {
+		fmt.Printf("Set %d\n", i)
+		for j, song := range set.Song {
+			fmt.Printf("%2d: %s\n", j, song.Name)
+
+			results, err := spotifyClient.Search(fmt.Sprintf("%s artist:kasabian", song.Name), spotify.SearchTypeTrack)
+			if err != nil {
+				log.Fatalf("Error searching for '%s': %v", song.Name, err)
+				continue
+			}
+			if results.Tracks != nil {
+				for _, track := range results.Tracks.Tracks {
+					fmt.Printf("\t%s - %s - %v\n", track.Name, track.Album.Name, concatSimpleArtistsNames(track.Artists))
+				}
+			}
+			fmt.Println()
+		}
+	}
+
+}
+
+func concatSimpleArtistsNames(simpleArtists []spotify.SimpleArtist) string {
+	artistNames := make([]string, len(simpleArtists))
+	for i, simpleArtist := range simpleArtists {
+		artistNames[i] = simpleArtist.Name
+	}
+	return strings.Join(artistNames, ", ")
 }
