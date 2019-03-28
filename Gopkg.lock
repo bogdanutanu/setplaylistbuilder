@@ -113,11 +113,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:1ff6915a45fb06d272e614e72219aa058aefc545f597a708eb0cc6cb778c344a"
+  digest = "1:644aed8f52f26f04daa6a1c6154cd3a9b3fe0bd4fc5aeb657e53043fbbe5c604"
   name = "github.com/zmb3/spotify"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a4bd83f60e06ab58f3516c61680d0532aabf470e"
+  revision = "94cbe6dc5cc2eaa467e36f30b130b0f827e4262d"
 
 [[projects]]
   branch = "master"
