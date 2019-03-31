@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/zmb3/spotify"
@@ -28,12 +30,12 @@ func readConfig() {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+		panic(fmt.Errorf("fatal error config file: %s", err))
 	}
 
 	err = viper.Unmarshal(&cfg)
 	if err != nil {
-		panic(fmt.Errorf("Fatal error parsing config file: %s \n", err))
+		panic(fmt.Errorf("fatal error parsing config file: %s", err))
 	}
 }
 
@@ -42,27 +44,22 @@ func init() {
 }
 
 func main() {
+	artistName := "kasabian"
+
 	ctx := context.Background()
 	client := setlistfm.NewClient(cfg.SetlistFmAPIKey)
 	setListQuery := setlistfm.SetlistQuery{
-		ArtistName: "kasabian",
+		ArtistName: artistName,
 	}
 
 	kasabiansetlists, err := client.SearchForSetlists(ctx, setListQuery)
 	if err != nil {
 		panic(fmt.Sprintf("Error searching for setlists: %s", err))
 	}
-	// fmt.Printf("Kasabian setlists: %+v", kasabiansetlists)
-	fmt.Println()
-	fmt.Println()
 
 	// We will try to find the most recent non-empty setlist from the first
 	// results page only
 	lastSetlist := setlist.ExtractMostRecent(kasabiansetlists.Setlists)
-	fmt.Printf("Most recent setlist: %+v", lastSetlist)
-
-	fmt.Println()
-	fmt.Println()
 
 	spotifyClientBuilder := spotifyutils.NewSpotifyAuthorizedClientBuilder("http://localhost:8080/callback")
 
@@ -79,32 +76,66 @@ func main() {
 	}
 	fmt.Println("You are logged in as:", user.ID)
 
-	// playlists, err := spotifyClient.GetPlaylistsForUser(user.ID)
-	// if err != nil {
-	// 	panic(fmt.Sprintf("Error retrieving user's playlists: %v", err))
-	// }
-	// for _, p := range playlists.Playlists {
-	// 	fmt.Printf("%s\n", p.Name)
-	// }
+	fullTracks := make([]spotify.FullTrack, 0)
 
 	for i, set := range lastSetlist.Sets.Set {
 		fmt.Printf("Set %d\n", i)
 		for j, song := range set.Song {
 			fmt.Printf("%2d: %s\n", j, song.Name)
 
-			results, err := spotifyClient.Search(fmt.Sprintf("%s artist:kasabian", song.Name), spotify.SearchTypeTrack)
+			results, err := spotifyClient.Search(fmt.Sprintf("%s artist:%s", song.Name, artistName), spotify.SearchTypeTrack)
 			if err != nil {
 				log.Fatalf("Error searching for '%s': %v", song.Name, err)
 				continue
 			}
 			if results.Tracks != nil {
-				for _, track := range results.Tracks.Tracks {
+				for i, track := range results.Tracks.Tracks {
 					fmt.Printf("\t%s - %s - %v\n", track.Name, track.Album.Name, concatSimpleArtistsNames(track.Artists))
+					if i == 0 {
+						fullTracks = append(fullTracks, track)
+					}
 				}
 			}
 			fmt.Println()
 		}
 	}
+
+	fmt.Printf("\n Proposed setplaylist:\n\n")
+
+	for i, track := range fullTracks {
+		fmt.Printf("\t%2d. %s - %s - %v\n", i+1, track.Name, track.Album.Name, concatSimpleArtistsNames(track.Artists))
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	answer := ""
+	for answer != "y" && answer != "n" {
+		fmt.Print("Proceed with this setlist? (y/n): ")
+		answer, _ = reader.ReadString('\n')
+		answer = strings.TrimSuffix(answer, "\n")
+		fmt.Printf("Answer: %s\n", answer)
+	}
+	switch answer {
+	case "y":
+	case "n":
+		os.Exit(0)
+	default:
+		log.Fatal("Answer not supported")
+		os.Exit(-1)
+	}
+
+	fullPlaylist, err := spotifyClient.CreatePlaylistForUser(
+		user.ID,
+		"Setlist "+artistName,
+		"Playlist created by SetPLayListBuilder",
+		false)
+	if err != nil {
+		log.Fatalf("Error creating playlist for user '%s': %v", user.ID, err)
+		os.Exit(-1)
+	}
+
+	spotifyClient.AddTracksToPlaylist(fullPlaylist.ID, extractTrackIDs(fullTracks)...)
+
+	fmt.Printf("Playlist '%s' wiht ID '%s' created successfully.\n", fullPlaylist.Name, fullPlaylist.ID)
 
 }
 
@@ -114,4 +145,12 @@ func concatSimpleArtistsNames(simpleArtists []spotify.SimpleArtist) string {
 		artistNames[i] = simpleArtist.Name
 	}
 	return strings.Join(artistNames, ", ")
+}
+
+func extractTrackIDs(fullTracks []spotify.FullTrack) []spotify.ID {
+	trackIDs := make([]spotify.ID, len(fullTracks))
+	for i, fullTrack := range fullTracks {
+		trackIDs[i] = fullTrack.ID
+	}
+	return trackIDs
 }
