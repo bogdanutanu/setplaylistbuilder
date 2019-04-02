@@ -15,10 +15,15 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/setplaylistbuilder/config"
+	"github.com/setplaylistbuilder/constants"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -50,6 +55,8 @@ func Execute() {
 }
 
 func init() {
+	setViperDefaults()
+
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
@@ -77,13 +84,40 @@ func initConfig() {
 
 		// Search config in home directory with name ".setplaylistbuilder" (without extension).
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".setplaylistbuilder")
+		viper.AddConfigPath(".")
+		viper.SetConfigName("setplaylistbuilder")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		log.Errorf("Can't read config from %s: %v", viper.ConfigFileUsed(), err)
+		os.Exit(-1)
 	}
+
+	err := viper.Unmarshal(&config.Config)
+	if err != nil {
+		panic(fmt.Errorf("fatal error parsing config file: %s", err))
+	}
+
+	if err := validateConfig(); err != nil {
+		log.Errorf("Error in config: %v", err)
+		os.Exit(-1)
+	}
+}
+
+func setViperDefaults() {
+	viper.SetDefault(constants.SetlistFmAPIKeyKey, "")
+	viper.SetDefault(constants.SpotifyOauthTokenFileKey, "")
+}
+
+func validateConfig() error {
+	if strings.TrimSpace(viper.GetString(constants.SetlistFmAPIKeyKey)) == "" {
+		return errors.New(constants.SetlistFmAPIKeyKey + " is empty")
+	}
+	if strings.TrimSpace(viper.GetString(constants.SpotifyOauthTokenFileKey)) == "" {
+		return errors.New(constants.SpotifyOauthTokenFileKey + " is empty")
+	}
+	return nil
 }

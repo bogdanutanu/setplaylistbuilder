@@ -2,7 +2,7 @@ package constants
 
 const (
 	// SetlistFmAPIKeyKey ...
-	SetlistFmAPIKeyKey = "SetlistFmAPIKey"
+	SetlistFmAPIKeyKey = "setlist_fm_api_key"
 	// SpotifyOauthTokenFileKey ...
-	SpotifyOauthTokenFileKey = "SpotifyOauthTokenFile"
+	SpotifyOauthTokenFileKey = "spotify_oauth_token_file"
 )
