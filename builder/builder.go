@@ -10,37 +10,11 @@ import (
 	"strings"
 
 	"github.com/jm-duarte/setlistfm"
+	"github.com/setplaylistbuilder/config"
 	"github.com/setplaylistbuilder/setlist"
 	"github.com/setplaylistbuilder/spotifyutils"
-	"github.com/spf13/viper"
 	"github.com/zmb3/spotify"
 )
-
-type AppConfig struct {
-	SetlistFmAPIKey       string
-	SpotifyOauthTokenFile string
-}
-
-var cfg AppConfig
-
-func readConfig() {
-	viper.SetConfigName("setplaylistbuilder")
-	viper.AddConfigPath(".")
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
-	}
-
-	err = viper.Unmarshal(&cfg)
-	if err != nil {
-		panic(fmt.Errorf("fatal error parsing config file: %s", err))
-	}
-}
-
-func init() {
-	readConfig()
-}
 
 func concatSimpleArtistsNames(simpleArtists []spotify.SimpleArtist) string {
 	artistNames := make([]string, len(simpleArtists))
@@ -60,7 +34,7 @@ func extractTrackIDs(fullTracks []spotify.FullTrack) []spotify.ID {
 
 func Build(artistName string) {
 	ctx := context.Background()
-	client := setlistfm.NewClient(cfg.SetlistFmAPIKey)
+	client := setlistfm.NewClient(config.Config.SetlistFmAPIKey)
 	setListQuery := setlistfm.SetlistQuery{
 		ArtistName: artistName,
 	}
