@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/setplaylistbuilder/builder"
 	"github.com/spf13/cobra"
 )
+
+var artistName string
 
 var fetchCmd = &cobra.Command{
 	Use:   "fetch --artistName <artist name>",
@@ -16,10 +20,15 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		builder.Build("kasabian")
+		if strings.TrimSpace(artistName) == "" {
+			panic("Artist name cannot be empty")
+		}
+		builder.Build(artistName)
 	},
 }
 
 func init() {
+	fetchCmd.Flags().StringVarP(&artistName, "artist-name", "a", "", "Name of the artist to build playlist based on setlist")
+
 	rootCmd.AddCommand(fetchCmd)
 }
