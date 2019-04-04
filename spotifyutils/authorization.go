@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/setplaylistbuilder/config"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 )
@@ -51,7 +52,7 @@ func (acb *spotifyAuthorizedClientBuilderStruct) GetSpotifyAuthorizedClient() *s
 const spotifyOauthTokenFile = "./spotify-oauth-token.json"
 
 func getOauthTokenFromFile() (*oauth2.Token, error) {
-	oauthTokenRawJSON, err := ioutil.ReadFile(spotifyOauthTokenFile)
+	oauthTokenRawJSON, err := ioutil.ReadFile(config.Config.SpotifyOauthTokenFile)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +71,7 @@ func writeOauthTokenToFile(tok *oauth2.Token) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(spotifyOauthTokenFile, jsonMarshalledToken, 0600)
+	return ioutil.WriteFile(config.Config.SpotifyOauthTokenFile, jsonMarshalledToken, 0600)
 }
 
 func (acb *spotifyAuthorizedClientBuilderStruct) CompleteAuth(w http.ResponseWriter, r *http.Request) {

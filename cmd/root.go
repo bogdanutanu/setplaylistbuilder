@@ -15,11 +15,10 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"strings"
 
+	"github.com/asaskevich/govalidator"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/setplaylistbuilder/config"
 	"github.com/setplaylistbuilder/constants"
@@ -101,7 +100,8 @@ func initConfig() {
 		panic(fmt.Errorf("fatal error parsing config file: %s", err))
 	}
 
-	if err := validateConfig(); err != nil {
+	_, err = govalidator.ValidateStruct(&config.Config)
+	if err != nil {
 		log.Errorf("Error in config: %v", err)
 		os.Exit(-1)
 	}
@@ -109,15 +109,5 @@ func initConfig() {
 
 func setViperDefaults() {
 	viper.SetDefault(constants.SetlistFmAPIKeyKey, "")
-	viper.SetDefault(constants.SpotifyOauthTokenFileKey, "")
-}
-
-func validateConfig() error {
-	if strings.TrimSpace(viper.GetString(constants.SetlistFmAPIKeyKey)) == "" {
-		return errors.New(constants.SetlistFmAPIKeyKey + " is empty")
-	}
-	if strings.TrimSpace(viper.GetString(constants.SpotifyOauthTokenFileKey)) == "" {
-		return errors.New(constants.SpotifyOauthTokenFileKey + " is empty")
-	}
-	return nil
+	viper.SetDefault(constants.SpotifyOauthTokenFileKey, "./spotify-oauth-token.json")
 }
