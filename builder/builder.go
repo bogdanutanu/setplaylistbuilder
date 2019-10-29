@@ -39,14 +39,14 @@ func Build(artistName string) {
 		ArtistName: artistName,
 	}
 
-	kasabiansetlists, err := client.SearchForSetlists(ctx, setListQuery)
+	setlists, err := client.SearchForSetlists(ctx, setListQuery)
 	if err != nil {
 		panic(fmt.Sprintf("Error searching for setlists: %s", err))
 	}
 
 	// We will try to find the most recent non-empty setlist from the first
 	// results page only
-	lastSetlist := setlist.ExtractMostRecent(kasabiansetlists.Setlists)
+	lastSetlist := setlist.ExtractMostRecent(setlists.Setlists)
 
 	spotifyClientBuilder := spotifyutils.NewSpotifyAuthorizedClientBuilder("http://localhost:8080/callback")
 
